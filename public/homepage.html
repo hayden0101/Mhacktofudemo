@@ -1,48 +1,87 @@
 <html>
   <head>
-    <title>TbOFU</title>
+    <title>TOFU</title>
   </head>
   <body>
     <header>
       <style>
+        * {
+          box-sizing: border-box;
+        }
+
         body {
-          background-color: #f0f0f0;
+          min-height: 100vh;
+          margin: 0;
+          background: #f3f8f8;
+          color: #263238;
           font-family: Arial, sans-serif;
         }
-        h1 {
-          color: #f182d3;
-          font-size: 48px;
-          margin-bottom: 20px;
+
+        header {
+          padding: 28px 20px;
+          background: linear-gradient(135deg, #1bfc9e, #07c898);
           text-align: center;
+        }
+
+        h1 {
+          margin: 0;
+          color: #151515;
+          font-size: clamp(32px, 6vw, 48px);
           text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
         }
-        p {
-          color: #d35400;
-          font-size: 15px;
-          line-height: 1.6;
+
+        main {
+          display: flex;
+          justify-content: center;
+          padding: 36px 20px 20px;
         }
+
         img {
-          margin: 15;
+          display: block;
+          width: min(500px, 100%);
+          height: auto;
+          border: 6px solid white;
+          border-radius: 16px;
+          box-shadow: 0 8px 24px rgba(38, 50, 56, 0.15);
         }
 
         .nav-links {
           display: flex;
           justify-content: center;
-          align-items: center;
+          gap: 16px;
+          margin: 12px 0 36px;
+          padding: 0;
           list-style: none;
         }
 
-        .nav-links li {
-          margin: 3;
+        .nav-links a {
+          display: inline-block;
+          padding: 12px 22px;
+          border-radius: 8px;
+          background: #07b880;
+          color: white;
+          font-weight: bold;
+          text-decoration: none;
         }
 
-        .title-sub {
-          display: inline-block;
-          font-size: 0.55em;
-          line-height: 1;
+        .nav-links a:hover {
+          background: #185f5a;
+        }
+
+        footer {
+          padding: 16px;
+          background: #e3eeee;
+          text-align: center;
+        }
+
+        footer p {
+          margin: 5px 0;
+          color: #526568;
+          font-size: 14px;
+          line-height: 1.5;
         }
       </style>
-      <h1>T<span class="title-sub">B</span>OFU Assistant</h1>
+      <h1>TOFU Writing Assistant</h1>
     </header>
 
     <main>
