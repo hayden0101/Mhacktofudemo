@@ -1,6 +1,7 @@
 <html>
   <head>
     <title>Teacher</title>
+    <script src="js/teacher.js" defer></script>
   </head>
   <body>
     <header>
@@ -42,7 +43,7 @@
           margin: 3;
         }
 
-        assignmentblock {
+        #assignmentblock {
           display: block;
           width: 400px;
           height: 400px;
@@ -51,6 +52,24 @@
           background-color: #f4f4f4;
           overflow-y: auto;
         }
+        .text-item {
+          padding: 8px 12px;
+          margin: 6px 0;
+          border: 1px solid #ddd;
+          border-radius: 4px;
+          word-wrap: break-word;
+        }
+        .controls {
+          display: flex;
+          gap: 8px;
+          width: 350px;
+        }
+        input {
+          flex: 1;
+          padding: 8px;
+          border: 1px solid #ccc;
+          border-radius: 4px;
+        }
       </style>
       <h1>Dashboard</h1>
     </header>
@@ -58,7 +77,16 @@
     <main>
       <div class="assignments">
         <h2>Assignments</h2>
-        <assignmentblock></assignmentblock>
+        <div id="assignmentblock"></div>
+      </div>
+      <div class="teacherinput">
+        <input
+          type="text"
+          id="textInput"
+          placeholder="Type a prompt"
+          autocomplete="off"
+        />
+        <button id="addBtn">Submit</button>
       </div>
       <nav class="navbar">
         <ul class="nav-links">
