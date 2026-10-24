@@ -1,99 +1,31 @@
+<!DOCTYPE html>
 <html>
  <head>
     <title>Student Dashboard</title>
     <link rel ="stylesheet" href="student.css">
- </head>
- <body>
+</head>
+<body>
     <header>
-      <style>
-        body {
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-            }
-            h1 {
-              color: #57f3e1;
-              font-size: 45px;
-              margin-bottom: 20px;
-              text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            h2 {
-              color:#0e0d0d;
-              font-size: 20px;
-              margin-bottom: 2px;
-              text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-              text-align: center;
-            }
-            p {
-                color:#4eb13bb7;
-                font-size: 15px;
-                line-height: 1.6;
-            }
-            img {
-                margin: 15;
-            }
+        <h1>Student Dashboard</h1>
+    </header>
+    
+    <main class = "layout">
+        <section class = "writtingblock">
+            <h2>Writting Section</h2>
+            <textarea id = "Writting" placeholder = "Start writting here..."></textarea>
+        </section>
 
-            .nav-links {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                list-style: none;
-            }
-
-            .nav-links li {
-                margin: 3;
-            }
-
-            writtingblock {
-                display: block;
-                width: 650px;
-                height: 500px;
-                margin: 20px auto /* Used in teacher*/;
-                padding: 15px;
-                background-color: #f4f4f4;
-                overflow-y: auto;
-            }
-            
-            .writtingblock textarea {
-                width: 50%;
-                height: 420px;
-                box-sizing: border-box;
-                padding: 10px;
-                font-size: 12px;
-                font-family: Arial, sans-serif;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                resize: none; /* this line is used to resize if needed*/
-
-            }
-            
-            </style>
-            <h1>Student Dashboard</h1>
-        </header>
-
-        <main class = "layout">
-            <aside class = "sidebar">
-                <h2>Taskbar</h2>
-                <ul id = "tasks.list">
-                </ul>
+        <aside class = "chat">
+            <h2>Chat</h2>
+            <div id ="chat-messages"></div>
+            <input type = "text" id="chat-input" placeholder="Type a message...">
             </aside>
-
-            <section class = "writtingblock">
-                <h2>Writting Section</h2>
-                <textarea id = "Writting" placeholder = "Start writting here..."></textarea>
-            </section>
-
-            <aside class = "chat">
-                <h2>Chat</h2>
-                <div id ="Chat-Message"></div>
-                <input type = "text" id="chat-input" placeholder="Type a message...">
-            </aside>
-
-            <nav class = "navbar">
-                <ul class = "nav-links">
-                    <li><a href = "homepage.html">BACK</a></li>
-                </ul> 
-            </nav>
-        </main>
-        <footer></footer>
+    </main>
+    
+    <nav class = "navbar">
+        <ul class = "nav-links">
+            <li><a href = "homepage.html">BACK</a></li>
+        </ul> 
+    </nav>
     </body>
 </html>
