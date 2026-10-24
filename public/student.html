@@ -1,6 +1,6 @@
 <html>
  <head>
-    <title>Student</title>
+    <title>Student Dashboard</title>
  </head>
  <body>
     <header>
@@ -53,11 +53,11 @@
             }
             
             .writtingblock textarea {
-                width: 100%;
+                width: 50%;
                 height: 420px;
                 box-sizing: border-box;
                 padding: 10px;
-                font-size: 16px;
+                font-size: 12px;
                 font-family: Arial, sans-serif;
                 border: 1px solid #ccc;
                 border-radius: 4px;
@@ -69,14 +69,27 @@
             <h1>Student Dashboard</h1>
         </header>
 
-        <main>
-            <div class="writtingblock">
+        <main class = "layout">
+            <aside class = "sidebar">
+                <h2>Taskbar</h2>
+                <ul id = "tasks.list">
+                </ul>
+            </aside>
+
+            <section class = "writtingblock">
                 <h2>Writting Section</h2>
-                <textarea id="Writting" placeholder="Start writting here..."></textarea>
-            </div>
+                <textarea id = "Writting" placeholder = "Start writting here..."></textarea>
+            </section>
+
+            <aside class = "chat">
+                <h2>Chat</h2>
+                <div id ="Chat-Message"></div>
+                <input type = "text" id="chat-input" placeholder="Type a message...">
+            </aside>
+
             <nav class = "navbar">
                 <ul class = "nav-links">
-                    <li><a href="homepage.html">BACK</a></li>
+                    <li><a href = "homepage.html">BACK</a></li>
                 </ul> 
             </nav>
         </main>
