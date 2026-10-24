@@ -24,25 +24,44 @@
           margin: 15;
         }
 
-        nav {
-          height: 25px;
-          width: 150px;
-          text-align: center;
-          background: cyan;
+        .nav-links {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          list-style: none;
+        }
+
+        .nav-links li {
+          margin: 3;
+        }
+
+        .title-sub {
           display: inline-block;
+          font-size: 0.55em;
+          line-height: 1;
         }
       </style>
-      <h1>TbOFU Assistant</h1>
+      <h1>T<span class="title-sub">B</span>OFU Assistant</h1>
     </header>
 
     <main>
+<<<<<<< Updated upstream
       <nav>
         <a href="student.html">Student</a> |
         <a href="#">Teacher</a>
       </nav>
       <img src="/public/images/plush.jpg" width="500" height="350"/>
+=======
+      <img src="/public/images/plush.jpg" width="500" height="350" />
+>>>>>>> Stashed changes
     </main>
 
+    <nav class="navbar">
+      <ul class="nav-links">
+        <li><a href="student.html">Student</a></li>
+        <li><a href="teacher.html">Teacher</a></li>
+      </ul>
+    </nav>
     <footer>
       <p>TbOFU California State University Long Beach, Marina Hacks</p>
     </footer>
