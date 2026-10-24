@@ -23,7 +23,7 @@
               text-align: center;
             }
             p {
-                color:#d2e37d;
+                color:#4eb13bb7;
                 font-size: 15px;
                 line-height: 1.6;
             }
@@ -46,19 +46,33 @@
                 display: block;
                 width: 650px;
                 height: 500px;
-                margin: 20px auto /* Used from teacher*/;
+                margin: 20px auto /* Used in teacher*/;
                 padding: 15px;
                 background-color: #f4f4f4;
                 overflow-y: auto;
             }
+            
+            .writtingblock textarea {
+                width: 100%;
+                height: 420px;
+                box-sizing: border-box;
+                padding: 10px;
+                font-size: 16px;
+                font-family: Arial, sans-serif;
+                border: 1px solid #ccc;
+                border-radius: 4px;
+                resize: none; /* this line is used to resize if needed*/
+
+            }
+            
             </style>
-            <h1>Student Dashboard<h1>
+            <h1>Student Dashboard</h1>
         </header>
 
         <main>
             <div class="writtingblock">
                 <h2>Writting Section</h2>
-                <writtingblock></writtingblock>
+                <textarea id="Writting" placeholder="Start writting here..."></textarea>
             </div>
             <nav class = "navbar">
                 <ul class = "nav-links">
