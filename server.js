@@ -1,27 +1,63 @@
+
+require("dotenv").config();
+
 const express = require("express");
 const path = require("path");
+const crypto = require("crypto");
+const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
-// Allow the server to receive JSON requests
+// Check that the Supabase credentials exist
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
+    throw new Error(
+        "Missing SUPABASE_URL or SUPABASE_SECRET_KEY in .env"
+    );
+}
+
+// Connect to Supabase from the server
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SECRET_KEY,
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false
+        }
+    }
+);
+
 app.use(express.json());
-
-// Serve files from the public folder
 app.use(express.static(path.join(__dirname, "public")));
+
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "homepage.html"));
 });
 
-// ------ Using Node.js Crypto ------
-// Temporary storage in server memory
-const assignments = [];
+// Get all assignments
+app.get("/api/assignments", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("assignments")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ assignments: data });
+    } catch (error) {
+        console.error("Error loading assignments:", error.message);
+        res.status(500).json({
+            error: "Unable to load assignments."
+        });
+    }
+});
 
 // Create an assignment
-app.post("/api/assignments", (req, res) => {
+app.post("/api/assignments", async (req, res) => {
     const { title, instructions, question } = req.body;
 
-    // Validate the form data
     if (
         typeof title !== "string" ||
         typeof instructions !== "string" ||
@@ -35,45 +71,88 @@ app.post("/api/assignments", (req, res) => {
         });
     }
 
-    // Generate a simple join code
-    const code = "TOFU" + crypto.randomInt(100, 1000);
+    try {
+        let code;
+        let exists = true;
 
-    const assignment = {
-        id: crypto.randomUUID(),
-        code,
-        title: title.trim(),
-        instructions: instructions.trim(),
-        question: question.trim(),
-        createdAt: new Date().toISOString()
-    };
+        // Generate a code that is not already in use
+        while (exists) {
+            code = "TOFU" + Math.floor(100 + Math.random() * 900);
 
-    // Store the assignment until the server restarts
-    assignments.push(assignment);
+            const { data, error } = await supabase
+                .from("assignments")
+                .select("id")
+                .eq("code", code)
+                .maybeSingle();
 
-    // Send the new assignment back to the teacher page
-    res.status(201).json({
-        message: "Assignment published successfully!",
-        assignment
-    });
-});
+            if (error) throw error;
 
-// Retrieve an assignment by its join code
-app.get("/api/assignments/:code", (req, res) => {
-    const code = req.params.code.toUpperCase();
+            exists = Boolean(data);
+        }
 
-    const assignment = assignments.find(
-        item => item.code === code
-    );
+        const newAssignment = {
+            id: crypto.randomUUID(),
+            code,
+            title: title.trim(),
+            instructions: instructions.trim(),
+            question: question.trim()
+        };
 
-    if (!assignment) {
-        return res.status(404).json({
-            error: "Assignment not found. Check the code and try again."
+        const { data, error } = await supabase
+            .from("assignments")
+            .insert(newAssignment)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.status(201).json({
+            message: "Assignment published successfully!",
+            assignment: {
+                ...data,
+                createdAt: data.created_at
+            }
+        });
+    } catch (error) {
+        console.error("Error publishing assignment:", error.message);
+        res.status(500).json({
+            error: "Unable to publish assignment. Please try again."
         });
     }
-
-    res.json({ assignment });
 });
 
+// Retrieve one assignment by its join code
+app.get("/api/assignments/:code", async (req, res) => {
+    const code = req.params.code.toUpperCase();
+
+    try {
+        const { data, error } = await supabase
+            .from("assignments")
+            .select("*")
+            .eq("code", code)
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!data) {
+            return res.status(404).json({
+                error: "Assignment not found. Check the code and try again."
+            });
+        }
+
+        res.json({
+            assignment: {
+                ...data,
+                createdAt: data.created_at
+            }
+        });
+    } catch (error) {
+        console.error("Error retrieving assignment:", error.message);
+        res.status(500).json({
+            error: "Unable to retrieve assignment."
+        });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`TOFU is running at http://localhost:${PORT}`);
