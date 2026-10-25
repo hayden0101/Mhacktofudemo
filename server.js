@@ -28,7 +28,7 @@ if (!process.env.GEMINI_API_KEY) {
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const GEMINI_M = "gemini-3.5-flash" // Need to check for the key again but it should be about this for the cheapest option
+const GEMINI_MODEL = "gemini-3.5-flash" // Need to check for the key again but it should be about this for the cheapest option
 
 
 const supabase = createClient(supabaseUrl, supabaseKey);

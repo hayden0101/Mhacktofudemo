@@ -13,7 +13,7 @@ const assignmentQuestion = document.getElementById("assignment-question");
 
 const answerForm = document.getElementById("answer-form");
 const studentNameInput = document.getElementById("student-name");
-const studentAnswerInput = document.getElementById("student-answer");
+const studentAnswerInput = document.getElemezntById("student-answer");
 const submitButton = document.getElementById("submit-button");
 
 const statusMessage = document.getElementById("status-message");
