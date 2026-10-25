@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/hayden0101/Mhacktofudemo#readme",
   "dependencies": {
+    "@google/genai": "^2.31.0",
     "@supabase/supabase-js": "^2.118.0",
     "dotenv": "^18.0.9",
     "express": "^5.3.0"
