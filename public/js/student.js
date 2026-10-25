@@ -13,7 +13,7 @@ const assignmentQuestion = document.getElementById("assignment-question");
 
 const answerForm = document.getElementById("answer-form");
 const studentNameInput = document.getElementById("student-name");
-const studentAnswerInput = document.getElemezntById("student-answer");
+const studentAnswerInput = document.getElementById("student-answer");
 const submitButton = document.getElementById("submit-button");
 
 const statusMessage = document.getElementById("status-message");
@@ -33,12 +33,6 @@ let aiQuestionCount = 0;
 let responseSubmitted = false;
 
 let chatHistory = [] // change to the state will be stored in an array
-
-// Helper function to go with the change state of the function
-function setChatEnabled(enabled) {
-    chatInput.disabled != !enabled;
-    chatSendButton.disabled != !enabled;
-}
 
 // Display status messages
 function showStatus(message, color = "#222") {
@@ -130,7 +124,6 @@ joinForm.addEventListener("submit", async (event) => {
         
         // reset/enable the chat
         chatHistory = [];
-        chatMessages.replaceChild; // tree branching section
         addChatMessage(
             "model",
             "Hi, need help? Ask me any questions and l'll do my best to help you right through it"
@@ -169,6 +162,7 @@ answerForm.addEventListener("submit", async (event) => {
     }
 
     submitButton.disabled = true;
+    setChatEnabled(false);
     showStatus("Submitting your response...");
 
     try {

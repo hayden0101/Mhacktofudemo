@@ -272,6 +272,35 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
     }
 });
 
+
+// for the delete section, remove after it is done
+app.delete("/api/assignments/:id", async (req, res) => {
+    try {
+        // Delete submissions first in case the table has no cascade rule
+        const { error: submissionsError } = await supabase
+            .from("submissions")
+            .delete()
+            .eq("assignment_id", req.params.id);
+
+        if (submissionsError) throw submissionsError;
+
+        const { error } = await supabase
+            .from("assignments")
+            .delete()
+            .eq("id", req.params.id);
+
+        if (error) throw error;
+
+        res.json({ message: "Assignment deleted." });
+    } catch (error) {
+        console.error("Error deleting assignment:", error.message);
+
+        res.status(500).json({
+            error: "Unable to delete assignment."
+        });
+    }
+});
+
 // Limit the amount of time for a message to be sent
 const chatLimiter = rateLimit({
     windowMs: 60 * 1000,
