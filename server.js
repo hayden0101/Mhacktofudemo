@@ -355,7 +355,6 @@ Rules:
     }
 });
 
-
 // Start the server
 app.listen(PORT, () => {
     console.log(`TOFU server running at http://localhost:${PORT}`);
