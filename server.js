@@ -261,6 +261,40 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
     }
 });
 
+
+ // DELETE: Remove an assignment and its associated submissions
+app.delete("/api/assignments/:id", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("assignments")
+            .delete()
+            .eq("id", req.params.id)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            console.error("Supabase delete error:", error);
+            throw error;
+        }
+
+        if (!data) {
+            return res.status(404).json({
+                error: "Assignment not found, or it could not be deleted."
+            });
+        }
+
+        res.json({
+            message: "Assignment deleted successfully."
+        });
+    } catch (error) {
+        console.error("Full assignment deletion error:", error);
+
+        res.status(500).json({
+            error: error.message || "Unable to delete assignment."
+        });
+    }
+});
+
 // Start the server
 app.listen(PORT, () => {
     console.log(`TOFU server running at http://localhost:${PORT}`);

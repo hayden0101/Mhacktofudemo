@@ -42,6 +42,47 @@ async function loadAssignments() {
             viewButton.type = "button";
             viewButton.textContent = "View Submissions";
 
+            const deleteButton = document.createElement("button");
+            deleteButton.type = "button";
+            deleteButton.textContent = "Delete Assignment";
+            deleteButton.style.backgroundColor = "#d9534f";
+
+            deleteButton.addEventListener("click", async () => {
+                const confirmed = window.confirm(
+                    `Delete "${assignment.title}"?\n\n` +
+                    "This will also delete its student submissions. This cannot be undone."
+                );
+
+                if (!confirmed) return;
+
+                deleteButton.disabled = true;
+                deleteButton.textContent = "Deleting...";
+
+                try {
+                    const response = await fetch(
+                        `/api/assignments/${encodeURIComponent(assignment.id)}`,
+                        { method: "DELETE" }
+                    );
+
+                    const result = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            result.error || "Failed to delete assignment."
+                        );
+                    }
+
+                    await loadAssignments();
+                } catch (error) {
+                    console.error("Error deleting assignment:", error);
+                    window.alert(error.message);
+
+                    deleteButton.disabled = false;
+                    deleteButton.textContent = "Delete Assignment";
+                }
+            });
+
+
             const submissionPanel = document.createElement("div");
             submissionPanel.hidden = true;
 
@@ -193,6 +234,7 @@ async function loadAssignments() {
                 code,
                 instructions,
                 viewButton,
+                deleteButton,
                 submissionPanel
             );
 
