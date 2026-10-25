@@ -1,5 +1,10 @@
 # Mhacktofudemo
 
+## Imports:
+- Node.js
+- Express.js
+- Supabase Database
+
 ## How to run the server
 
 in powershell terminal "ctrl + `" type:
@@ -11,4 +16,4 @@ to close it, press "ctrl + c"
 
 - https://www.w3schools.com/nodejs/nodejs_path.asp
 - https://www.geeksforgeeks.org/web-tech/express-js-express-json-function/
-  -Geeksforgeeks html and css resources
+- Geeksforgeeks html and css resources

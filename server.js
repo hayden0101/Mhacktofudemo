@@ -154,6 +154,61 @@ app.get("/api/assignments/:code", async (req, res) => {
     }
 });
 
+// POST submit student response
+app.post("/api/submissions", async (req, res) => {
+    const { assignmentId, studentName, answer } = req.body;
+
+    if (!assignmentId || !studentName?.trim() || !answer?.trim()) {
+        return res.status(400).json({
+            error: "Please provide your name and a response."
+        });
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from("submissions")
+            .insert({
+                assignment_id: assignmentId,
+                student_name: studentName.trim(),
+                answer: answer.trim()
+            })
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        res.status(201).json({
+            message: "Response submitted successfully!",
+            submission: data
+        });
+    } catch (error) {
+        console.error("Error saving submission:", error.message);
+        res.status(500).json({
+            error: "Unable to save your response."
+        });
+    }
+});
+
+// GET submissions for a specific assignment
+app.get("/api/assignments/:id/submissions", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("submissions")
+            .select("id, student_name, answer, submitted_at")
+            .eq("assignment_id", req.params.id)
+            .order("submitted_at", { ascending: false });
+
+        if (error) throw error;
+
+        res.json({ submissions: data });
+    } catch (error) {
+        console.error("Error loading submissions:", error.message);
+        res.status(500).json({
+            error: "Unable to load student submissions."
+        });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`TOFU is running at http://localhost:${PORT}`);
 });

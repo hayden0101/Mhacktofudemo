@@ -1,99 +1,295 @@
-<html>
- <head>
-    <title>Student Dashboard</title>
-    <link rel ="stylesheet" href="student.css">
- </head>
- <body>
-    <header>
-      <style>
+ 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - TOFU</title>
+    <script src="js/student.js" defer></script>
+
+    <style>
         body {
             background-color: #f0f0f0;
             font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 24px;
+            color: #222;
+        }
+
+        h1 {
+            color: #27bfae;
+            font-size: 40px;
+            text-align: center;
+            margin: 10px 0 24px;
+        }
+
+        h2 {
+            font-size: 22px;
+            margin-top: 0;
+        }
+
+        h3 {
+            font-size: 17px;
+            margin-bottom: 6px;
+        }
+
+        p {
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .panel {
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 24px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            margin: 14px 0 6px;
+        }
+
+        input, textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px;
+            font-size: 16px;
+            font-family: Arial, sans-serif;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        input:focus, textarea:focus {
+            outline: 2px solid #27bfae;
+            outline-offset: 1px;
+        }
+
+        textarea {
+            min-height: 300px;
+            resize: vertical;
+        }
+
+        button {
+            margin-top: 14px;
+            padding: 12px 20px;
+            background-color: #27bfae;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #199b8e;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        #status-message {
+            max-width: 700px;
+            margin: 12px auto;
+            overflow-wrap: anywhere;
+        }
+
+        .assignment-header {
+            border-bottom: 1px solid #e5e5e5;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+
+        .chat-panel {
+            max-width: 700px;
+            margin: 20px auto;
+            padding: 24px;
+            background-color: #fff;
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .chat-description {
+            color: #666;
+        }
+
+        .chat-input-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .chat-input-row input {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .chat-input-row button {
+            margin-top: 5px;
+            white-space: nowrap;
+        }
+
+        #chat-messages {
+            min-height: 50px;
+            max-height: 220px;
+            overflow-y: auto;
+            margin: 14px 0;
+            padding: 12px;
+            background-color: #f8f8f8;
+            border-radius: 6px;
+        }
+
+        .chat-placeholder {
+            color: #777;
+            font-size: 13px;
+        }
+
+        .navbar {
+            text-align: center;
+            margin: 24px 0;
+        }
+
+        .navbar a {
+            color: #333;
+        }
+
+        [hidden] {
+            display: none !important;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 12px;
             }
+
             h1 {
-              color: #57f3e1;
-              font-size: 45px;
-              margin-bottom: 20px;
-              text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            }
-            h2 {
-              color:#0e0d0d;
-              font-size: 20px;
-              margin-bottom: 2px;
-              text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-              text-align: center;
-            }
-            p {
-                color:#4eb13bb7;
-                font-size: 15px;
-                line-height: 1.6;
-            }
-            img {
-                margin: 15;
+                font-size: 32px;
             }
 
-            .nav-links {
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                list-style: none;
+            .panel, .chat-panel {
+                padding: 18px;
             }
 
-            .nav-links li {
-                margin: 3;
+            .chat-input-row {
+                flex-direction: column;
+                align-items: stretch;
             }
 
-            writtingblock {
-                display: block;
-                width: 650px;
-                height: 500px;
-                margin: 20px auto /* Used in teacher*/;
-                padding: 15px;
-                background-color: #f4f4f4;
-                overflow-y: auto;
+            .chat-input-row button {
+                margin-top: 0;
             }
-            
-            .writtingblock textarea {
-                width: 50%;
-                height: 420px;
-                box-sizing: border-box;
-                padding: 10px;
-                font-size: 12px;
-                font-family: Arial, sans-serif;
-                border: 1px solid #ccc;
-                border-radius: 4px;
-                resize: none; /* this line is used to resize if needed*/
+        }
+    </style>
+</head>
 
-            }
-            
-            </style>
-            <h1>Student Dashboard</h1>
-        </header>
+<body>
+    <header>
+        <h1>Student Dashboard</h1>
+    </header>
 
-        <main class = "layout">
-            <aside class = "sidebar">
-                <h2>Taskbar</h2>
-                <ul id = "tasks.list">
-                </ul>
-            </aside>
+    <main>
+        <!-- Students enter the teacher's code here -->
+        <section class="panel" id="join-section">
+            <h2>Join an Assignment</h2>
+            <p>Enter the join code provided by your teacher to get started.</p>
 
-            <section class = "writtingblock">
-                <h2>Writting Section</h2>
-                <textarea id = "Writting" placeholder = "Start writting here..."></textarea>
-            </section>
+            <form id="join-form">
+                <label for="join-code">Assignment Code</label>
+                <input
+                    id="join-code"
+                    type="text"
+                    placeholder="Example: TOFU482"
+                    maxlength="7"
+                    autocomplete="off"
+                    required
+                >
+                <button type="submit" id="join-button">
+                    Join Assignment
+                </button>
+            </form>
+        </section>
 
-            <aside class = "chat">
-                <h2>Chat</h2>
-                <div id ="Chat-Message"></div>
-                <input type = "text" id="chat-input" placeholder="Type a message...">
-            </aside>
+        <p id="status-message" role="status" aria-live="polite"></p>
 
-            <nav class = "navbar">
-                <ul class = "nav-links">
-                    <li><a href = "homepage.html">BACK</a></li>
-                </ul> 
-            </nav>
-        </main>
-        <footer></footer>
-    </body>
+        <!-- This stays hidden until a valid assignment code is entered -->
+        <section class="panel" id="assignment-section" hidden>
+            <div class="assignment-header">
+                <h2 id="assignment-title"></h2>
+            </div>
+
+            <h3>Instructions</h3>
+            <p id="assignment-instructions"></p>
+
+            <h3>Question</h3>
+            <p id="assignment-question"></p>
+
+            <form id="answer-form">
+                <label for="student-name">Your Name</label>
+                <input
+                    id="student-name"
+                    type="text"
+                    placeholder="Enter your name"
+                    maxlength="100"
+                    required
+                >
+
+                <label for="student-answer">Your Response</label>
+                <textarea
+                    id="student-answer"
+                    placeholder="Take your time and explain your thinking..."
+                    required
+                ></textarea>
+
+                <button type="submit" id="submit-button">
+                    Submit Answer
+                </button>
+            </form>
+        </section>
+
+        <!-- Placeholder for future Google AI chatbot integration -->
+        <section class="chat-panel" id="chat-section">
+            <h2>TOFU AI Assistant</h2>
+            <p class="chat-description">
+                Need help understanding the assignment? The AI assistant will
+                help you explore ideas, understand concepts, and work through
+                difficult questions.
+            </p>
+
+            <div id="chat-messages" aria-live="polite">
+                <p class="chat-placeholder">
+                    Your AI learning assistant will appear here soon.
+                </p>
+            </div>
+
+            <form id="chat-form">
+                <label for="chat-input">Ask a question</label>
+                <div class="chat-input-row">
+                    <input
+                        id="chat-input"
+                        type="text"
+                        placeholder="Ask for a hint or explanation..."
+                        disabled
+                    >
+                    <button type="submit" id="chat-send-button" disabled>
+                        Send
+                    </button>
+                </div>
+            </form>
+
+            <p class="chat-placeholder">
+                AI assistant integration coming soon.
+            </p>
+        </section>
+
+        <nav class="navbar">
+            <a href="homepage.html">Back to Home</a>
+        </nav>
+    </main>
+</body>
 </html>
