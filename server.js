@@ -13,8 +13,6 @@ const PORT = process.env.PORT || 3000;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
-
-// A check for the server key to store/load information
 if (!supabaseUrl || !supabaseKey) {
     console.error(
         "Missing SUPABASE_URL or SUPABASE_SECRET_KEY in your .env file."
@@ -22,16 +20,16 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-// A check to make sure the current API key is in the files
+
 if (!process.env.GEMINI_API_KEY) {
     console.error("Missing GEMINI_API_KEY in your .env file");
     process.exit(1)
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const GEMINI_MODEL = "gemini-3.5-flash" // the Gemini Model that we will be using for the AI interface
+const GEMINI_MODEL = "gemini-3.5-flash" // Need to check for the key again but it should be about this for the cheapest option
 
-// Create the client using the supabaseURL and check the key
+
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
@@ -132,6 +130,40 @@ app.post("/api/assignments", async (req, res) => {
 
         res.status(500).json({
             error: "Unable to publish assignment."
+        });
+    }
+});
+
+
+/* DELETE: Remove an assignment and its associated submissions */
+app.delete("/api/assignments/:id", async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from("assignments")
+            .delete()
+            .eq("id", req.params.id)
+            .select("id")
+            .maybeSingle();
+
+        if (error) {
+            throw error;
+        }
+
+        if (!data) {
+            return res.status(404).json({
+                error: "Assignment not found."
+            });
+        }
+
+        return res.json({
+            message: "Assignment deleted successfully."
+        });
+
+    } catch (error) {
+        console.error("Error deleting assignment:", error.message);
+
+        return res.status(500).json({
+            error: "Unable to delete assignment."
         });
     }
 });
@@ -274,35 +306,6 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
     }
 });
 
-
-// DELETE: Delete the assignment after it has been submitted
-app.delete("/api/assignments/:id", async (req, res) => {
-    try {
-        // Delete submissions first in case the table has no cascade rule
-        const { error: submissionsError } = await supabase
-            .from("submissions")
-            .delete()
-            .eq("assignment_id", req.params.id);
-
-        if (submissionsError) throw submissionsError;
-
-        const { error } = await supabase
-            .from("assignments")
-            .delete()
-            .eq("id", req.params.id);
-
-        if (error) throw error;
-
-        res.json({ message: "Assignment deleted." });
-    } catch (error) {
-        console.error("Error deleting assignment:", error.message);
-
-        res.status(500).json({
-            error: "Unable to delete assignment."
-        });
-    }
-});
-
 // Limit the amount of time for a message to be sent
 const chatLimiter = rateLimit({
     windowMs: 60 * 1000,
@@ -338,22 +341,20 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             return res.status(404).json({ error: "Assignment not found." });
         }
 
-        // This section of the code will handle the guardrails logic of the AI chatbot in the student panel. 
+    // This information is a placeholder at the moment as to just try and learn the logic of the program
         const systemInstruction = `You are a study guide helping a student with a writing assignment.
 
-        Assignment title: ${assignment.title}
-        Teacher's instructions: ${assignment.instructions}
-        Question: ${assignment.question}
+Assignment title: ${assignment.title}
+Teacher's instructions: ${assignment.instructions}
+Question: ${assignment.question}
 
-        Rules:
-        - Help the student work out HOW to approach the question: suggest structure, key ideas to consider, and guiding questions.
-        - Do NOT write the answer or full paragraphs for them, even if they ask directly. Offer hints and approaches instead.
-        - If they share their draft, give specific feedback (clarity, structure, evidence) without rewriting it.
-        - Stay on topic for this assignment.
-        - Keep replies short and encouraging. 
-        - Format for easy reading: use short paragraphs separated by a blank line. If you give steps or ideas, put each on its own line as "1.", "2.", "3.", with a blank line before the list.
-        - Use plain text only. Do not use markdown symbols such as asterisks, pound signs, or backticks.`;
-        
+Rules:
+- Help the student work out HOW to approach the question: suggest structure, key ideas to consider, and guiding questions.
+- Do NOT write the answer or full paragraphs for them, even if they ask directly. Offer hints and approaches instead.
+- If they share their draft, give specific feedback (clarity, structure, evidence) without rewriting it.
+- Stay on topic for this assignment.
+- Keep replies short and encouraging. Use plain text only, with no markdown formatting.`;
+
         // Rebuild history from trusted fields only and cap its size
         const past = Array.isArray(history)
             ? history.slice(-20).map(m => ({
@@ -369,17 +370,62 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             ? `Student's current draft:\n"""\n${draftText}\n"""\n\nStudent's question: ${question}`
             : question;
 
-        const response = await ai.models.generateContent({
-            model: GEMINI_MODEL,
-            contents: [...past, { role: "user", parts: [{ text: userText }] }],
-            config: { systemInstruction }
-        });
+        // Retry temporary Gemini service errors using exponential backoff.
+        let response;
+        let lastError;
+
+        for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+                response = await ai.models.generateContent({
+                    model: GEMINI_MODEL,
+                    contents: [
+                        ...past,
+                        { role: "user", parts: [{ text: userText }] }
+                    ],
+                    config: {
+                        systemInstruction
+                    }
+                });
+
+                // The request succeeded, so exit the retry loop.
+                break;
+
+            } catch (error) {
+                lastError = error;
+
+                const errorText =
+                    `${error.message || ""} ${JSON.stringify(error)}`;
+
+                const isTemporary =
+                    /503|UNAVAILABLE|429|RESOURCE_EXHAUSTED|500|INTERNAL/i
+                        .test(errorText);
+
+                // Don't retry errors that are unlikely to resolve on their own.
+                if (!isTemporary || attempt === 2) {
+                    throw error;
+                }
+
+                // Wait approximately 1 second, then 2 seconds before retrying.
+                const delayMs =
+                    1000 * (2 ** attempt) + Math.random() * 300;
+
+                console.warn(
+                    `Gemini request failed (attempt ${attempt + 1}/3). ` +
+                    `Retrying in ${Math.round(delayMs)} ms.`
+                );
+
+                await new Promise(resolve => setTimeout(resolve, delayMs));
+            }
+        }
+
+        if (!response) {
+            throw lastError || new Error("Gemini did not return a response.");
+        }
 
         res.json({
             reply: response.text || "I couldn't come up with a response to that. Try rephrasing your question."
         });
-        
-        } catch (error) {
+    } catch (error) {
         console.error("Error in chat:", error.message);
 
         res.status(500).json({
