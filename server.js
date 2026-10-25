@@ -2,6 +2,8 @@
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
+const { GoogleGenAI } = require("@google/genai");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const { createClient } = require("@supabase/supabase-js");
@@ -18,6 +20,16 @@ if (!supabaseUrl || !supabaseKey) {
     );
     process.exit(1);
 }
+
+
+if (!process.env.GEMINI_API_KEY) {
+    console.error("Missing GEMINI_API_KEY in your .env file");
+    process.exit(1)
+}
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const GEMINI_M = "gemini-3.5-flash" // Need to check for the key again but it should be about this for the cheapest option
+
 
 const supabase = createClient(supabaseUrl, supabaseKey);
 
@@ -260,6 +272,89 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
         });
     }
 });
+
+// Limit the amount of time for a message to be sent
+const chatLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    limit: 15, // 15 messages per minute per IP
+    message: { error: "You're sending messages too quickly. Please wait a moment." }
+});
+
+// POST: Ask the AI guide a question about an assignment
+app.post("/api/chat", chatLimiter, async (req, res) => {
+    const { code, message, history = [], draft = "" } = req.body;
+
+    if (
+        typeof code !== "string" ||
+        typeof message !== "string" ||
+        !message.trim()
+    ) {
+        return res.status(400).json({
+            error: "Assignment code and message are required."
+        });
+    }
+
+    try {
+        // Look up the assignment on the server so the client can't change it
+        const { data: assignment, error } = await supabase
+            .from("assignments")
+            .select("title, instructions, question")
+            .eq("code", code.trim().toUpperCase())
+            .maybeSingle();
+
+        if (error) throw error;
+
+        if (!assignment) {
+            return res.status(404).json({ error: "Assignment not found." });
+        }
+
+    // This information is a placeholder at the moment as to just try and learn the logic of the program
+        const systemInstruction = `You are a study guide helping a student with a writing assignment.
+
+Assignment title: ${assignment.title}
+Teacher's instructions: ${assignment.instructions}
+Question: ${assignment.question}
+
+Rules:
+- Help the student work out HOW to approach the question: suggest structure, key ideas to consider, and guiding questions.
+- Do NOT write the answer or full paragraphs for them, even if they ask directly. Offer hints and approaches instead.
+- If they share their draft, give specific feedback (clarity, structure, evidence) without rewriting it.
+- Stay on topic for this assignment.
+- Keep replies short and encouraging. Use plain text only, with no markdown formatting.`;
+
+        // Rebuild history from trusted fields only and cap its size
+        const past = Array.isArray(history)
+            ? history.slice(-20).map(m => ({
+                role: m.role === "model" ? "model" : "user",
+                parts: [{ text: String(m.text).slice(0, 4000) }]
+            }))
+            : [];
+
+        const question = message.trim().slice(0, 2000);
+        const draftText = String(draft).trim().slice(0, 8000);
+
+        const userText = draftText
+            ? `Student's current draft:\n"""\n${draftText}\n"""\n\nStudent's question: ${question}`
+            : question;
+
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [...past, { role: "user", parts: [{ text: userText }] }],
+            config: { systemInstruction }
+        });
+
+        res.json({
+            reply: response.text || "I couldn't come up with a response to that. Try rephrasing your question."
+        });
+    } catch (error) {
+        console.error("Error in chat:", error.message);
+
+        res.status(500).json({
+            error: "The AI assistant is unavailable right now."
+        });
+    }
+});
+
 
 // Start the server
 app.listen(PORT, () => {

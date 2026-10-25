@@ -1,4 +1,3 @@
-
 const joinForm = document.getElementById("join-form");
 const joinCodeInput = document.getElementById("join-code");
 const joinButton = document.getElementById("join-button");
@@ -19,6 +18,12 @@ const submitButton = document.getElementById("submit-button");
 
 const statusMessage = document.getElementById("status-message");
 
+// New Section for the AI to be done (Will look at it later)
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const chatSendButton = document.getElementById("chat-send-button");
+const chatMessages = document.getElementById("chat-messages");
+
 // Current assignment and activity tracking
 let currentAssignment = null;
 
@@ -27,10 +32,34 @@ let tabLeaveCount = 0;
 let aiQuestionCount = 0;
 let responseSubmitted = false;
 
+let chatHistory = [] // change to the state will be stored in an array
+
+// Helper function to go with the change state of the function
+function setChatEnabled(enabled) {
+    chatInput.disabled != !enabled;
+    chatSendButton.disabled != !enabled;
+}
+
 // Display status messages
 function showStatus(message, color = "#222") {
     statusMessage.textContent = message;
     statusMessage.style.color = color;
+}
+
+// Set chat messages
+function setChatEnabled(enabled) {
+    chatInput.disabled = !enabled;
+    chatSendButton.disabled = !enabled;
+}
+
+// Adds the messages to the chat
+function addChatMessage(role, text) {
+    const div = document.createElement("div");
+    div.className = "chat-msg " + role;
+    div.textContent = text;
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
 }
 
 // Track paste events in the student's answer textbox
@@ -97,6 +126,16 @@ joinForm.addEventListener("submit", async (event) => {
         tabLeaveCount = 0;
         aiQuestionCount = 0;
         responseSubmitted = false;
+
+        
+        // reset/enable the chat
+        chatHistory = [];
+        chatMessages.replaceChild; // tree branching section
+        addChatMessage(
+            "model",
+            "Hi, need help? Ask me any questions and l'll do my best to help you right through it"
+        )
+        setChatEnabled(true);
 
         // Show the assignment and the two-column workspace
         assignmentSection.hidden = false;
@@ -171,5 +210,56 @@ answerForm.addEventListener("submit", async (event) => {
         console.error("Error submitting response:", error);
         showStatus(error.message, "red");
         submitButton.disabled = false;
+    }
+});
+
+
+// Chat submit handler, handles the chat submissions for the events 
+chatForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    if (!currentAssignment || responseSubmitted) return;
+
+    const message = chatInput.value.trim();
+    if (!message) return;
+
+    chatInput.value = "";
+    addChatMessage("user", message);
+    aiQuestionCount++; // reported to the teacher with the submission
+
+    const pending = addChatMessage("model", "Thinking...");
+    setChatEnabled(false);
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                code: currentAssignment.code,
+                message,
+                history: chatHistory,
+                draft: studentAnswerInput.value
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.error || "Unable to reach the AI assistant.");
+        }
+
+        pending.textContent = result.reply;
+        chatHistory.push(
+            { role: "user", text: message },
+            { role: "model", text: result.reply }
+        );
+    } catch (error) {
+        console.error("Chat error:", error);
+        pending.textContent = error.message;
+    } finally {
+        if (!responseSubmitted) {
+            setChatEnabled(true);
+            chatInput.focus();
+        }
     }
 });
