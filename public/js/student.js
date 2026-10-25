@@ -1,11 +1,15 @@
+
 const joinForm = document.getElementById("join-form");
 const joinCodeInput = document.getElementById("join-code");
 const joinButton = document.getElementById("join-button");
-
 const joinSection = document.getElementById("join-section");
+
 const assignmentSection = document.getElementById("assignment-section");
+const studentWorkspace = document.getElementById("student-workspace");
 const assignmentTitle = document.getElementById("assignment-title");
-const assignmentInstructions = document.getElementById("assignment-instructions");
+const assignmentInstructions = document.getElementById(
+    "assignment-instructions"
+);
 const assignmentQuestion = document.getElementById("assignment-question");
 
 const answerForm = document.getElementById("answer-form");
@@ -15,27 +19,28 @@ const submitButton = document.getElementById("submit-button");
 
 const statusMessage = document.getElementById("status-message");
 
+// Current assignment and activity tracking
 let currentAssignment = null;
+
 let pasteCount = 0;
 let tabLeaveCount = 0;
 let aiQuestionCount = 0;
 let responseSubmitted = false;
 
-// Display status messages to the student.
-function showStatus(message, isError = false) {
+// Display status messages
+function showStatus(message, color = "#222") {
     statusMessage.textContent = message;
-    statusMessage.style.color = isError ? "#c62828" : "#16803c";
+    statusMessage.style.color = color;
 }
 
-// Track pasting into the answer textbox.
+// Track paste events in the student's answer textbox
 studentAnswerInput.addEventListener("paste", () => {
     if (currentAssignment && !responseSubmitted) {
         pasteCount++;
-        console.log("Paste events:", pasteCount);
     }
 });
 
-// Track when the student leaves the assignment tab.
+// Track when the student leaves the browser tab after joining
 document.addEventListener("visibilitychange", () => {
     if (
         document.hidden &&
@@ -43,18 +48,17 @@ document.addEventListener("visibilitychange", () => {
         !responseSubmitted
     ) {
         tabLeaveCount++;
-        console.log("Tab leaves:", tabLeaveCount);
     }
 });
 
-// Join an assignment using the teacher's code.
+// Join an assignment using the teacher's code
 joinForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     const code = joinCodeInput.value.trim().toUpperCase();
 
     if (!code) {
-        showStatus("Please enter an assignment code.", true);
+        showStatus("Please enter an assignment code.", "red");
         return;
     }
 
@@ -66,76 +70,54 @@ joinForm.addEventListener("submit", async (event) => {
             `/api/assignments/${encodeURIComponent(code)}`
         );
 
-        const responseText = await response.text();
-        let result;
-
-        try {
-            result = JSON.parse(responseText);
-        } catch {
-            console.error("Server returned non-JSON:", responseText);
-            throw new Error(
-                `Unexpected server response (HTTP ${response.status}).`
-            );
-        }
+        const result = await response.json();
 
         if (!response.ok) {
             throw new Error(
-                result.error || "Could not find that assignment."
+                result.error || "Unable to find that assignment."
             );
         }
 
-        if (
-            !result.assignment ||
-            !result.assignment.id ||
-            !result.assignment.title
-        ) {
-            throw new Error("The assignment data is incomplete.");
+        if (!result.assignment) {
+            throw new Error("Assignment information was not returned.");
         }
 
         currentAssignment = result.assignment;
 
-        // Reset activity counters for this assignment session.
+        // Display the assignment information
+        assignmentTitle.textContent = currentAssignment.title;
+        assignmentInstructions.textContent =
+            currentAssignment.instructions;
+        assignmentQuestion.textContent = currentAssignment.question;
+
+        // Reset form and activity counters for this assignment
+        answerForm.reset();
+
         pasteCount = 0;
         tabLeaveCount = 0;
         aiQuestionCount = 0;
         responseSubmitted = false;
 
-        assignmentTitle.textContent = currentAssignment.title;
-        assignmentInstructions.textContent =
-            currentAssignment.instructions;
-        assignmentQuestion.textContent =
-            currentAssignment.question;
-
+        // Show the assignment and the two-column workspace
         assignmentSection.hidden = false;
+        studentWorkspace.hidden = false;
         joinSection.hidden = true;
 
-        answerForm.reset();
-        studentAnswerInput.disabled = false;
-        studentNameInput.disabled = false;
-        submitButton.disabled = false;
-        submitButton.textContent = "Submit Answer";
-
-        showStatus("Assignment loaded successfully!");
-
-        assignmentSection.scrollIntoView({
-            behavior: "smooth",
-            block: "start"
-        });
-
+        showStatus("");
     } catch (error) {
         console.error("Error joining assignment:", error);
-        showStatus(error.message || "Unable to load assignment.", true);
+        showStatus(error.message, "red");
     } finally {
         joinButton.disabled = false;
     }
 });
 
-// Submit the student's response and activity counts.
+// Submit the student's response and activity counters
 answerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
     if (!currentAssignment) {
-        showStatus("Please join an assignment first.", true);
+        showStatus("Please join an assignment first.", "red");
         return;
     }
 
@@ -143,7 +125,7 @@ answerForm.addEventListener("submit", async (event) => {
     const answer = studentAnswerInput.value.trim();
 
     if (!studentName || !answer) {
-        showStatus("Please enter your name and response.", true);
+        showStatus("Please provide your name and a response.", "red");
         return;
     }
 
@@ -166,17 +148,7 @@ answerForm.addEventListener("submit", async (event) => {
             })
         });
 
-        const responseText = await response.text();
-        let result;
-
-        try {
-            result = JSON.parse(responseText);
-        } catch {
-            console.error("Server returned non-JSON:", responseText);
-            throw new Error(
-                `Unexpected server response (HTTP ${response.status}).`
-            );
-        }
+        const result = await response.json();
 
         if (!response.ok) {
             throw new Error(
@@ -186,18 +158,18 @@ answerForm.addEventListener("submit", async (event) => {
 
         responseSubmitted = true;
 
-        showStatus("Your response was submitted successfully!");
+        showStatus(
+            result.message || "Response submitted successfully!",
+            "green"
+        );
 
-        studentAnswerInput.disabled = true;
+        // Prevent edits or another submission after success
         studentNameInput.disabled = true;
-        submitButton.textContent = "Submitted";
-
+        studentAnswerInput.disabled = true;
+        submitButton.disabled = true;
     } catch (error) {
         console.error("Error submitting response:", error);
-        showStatus(
-            error.message || "Unable to submit your response.",
-            true
-        );
+        showStatus(error.message, "red");
         submitButton.disabled = false;
     }
 });

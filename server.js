@@ -1,41 +1,42 @@
 
-require("dotenv").config();
-
 const express = require("express");
 const path = require("path");
 const crypto = require("crypto");
+require("dotenv").config();
+
 const { createClient } = require("@supabase/supabase-js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Check that the Supabase credentials exist
-if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SECRET_KEY) {
-    throw new Error(
-        "Missing SUPABASE_URL or SUPABASE_SECRET_KEY in .env"
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SECRET_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+    console.error(
+        "Missing SUPABASE_URL or SUPABASE_SECRET_KEY in your .env file."
     );
+    process.exit(1);
 }
 
-// Connect to Supabase from the server
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SECRET_KEY,
-    {
-        auth: {
-            persistSession: false,
-            autoRefreshToken: false
-        }
-    }
-);
+const supabase = createClient(supabaseUrl, supabaseKey);
 
+// Middleware
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+// Open the homepage when visiting http://localhost:3000
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "public", "homepage.html"));
 });
 
-// Get all assignments
+// Generate assignment join codes such as TOFU482
+function generateAssignmentCode() {
+    const number = crypto.randomInt(100, 1000);
+    return `TOFU${number}`;
+}
+
+// GET: Load all assignments
 app.get("/api/assignments", async (req, res) => {
     try {
         const { data, error } = await supabase
@@ -48,13 +49,14 @@ app.get("/api/assignments", async (req, res) => {
         res.json({ assignments: data });
     } catch (error) {
         console.error("Error loading assignments:", error.message);
+
         res.status(500).json({
             error: "Unable to load assignments."
         });
     }
 });
 
-// Create an assignment
+// POST: Create a new assignment
 app.post("/api/assignments", async (req, res) => {
     const { title, instructions, question } = req.body;
 
@@ -67,63 +69,63 @@ app.post("/api/assignments", async (req, res) => {
         !question.trim()
     ) {
         return res.status(400).json({
-            error: "Please fill in all assignment fields."
+            error: "Please provide a title, instructions, and question."
         });
     }
 
     try {
-        let code;
-        let exists = true;
+        let assignment = null;
+        let insertError = null;
 
-        // Generate a code that is not already in use
-        while (exists) {
-            code = "TOFU" + Math.floor(100 + Math.random() * 900);
+        // Retry if the generated join code already exists.
+        for (let attempt = 0; attempt < 5; attempt++) {
+            const code = generateAssignmentCode();
 
             const { data, error } = await supabase
                 .from("assignments")
-                .select("id")
-                .eq("code", code)
-                .maybeSingle();
+                .insert({
+                    code,
+                    title: title.trim(),
+                    instructions: instructions.trim(),
+                    question: question.trim()
+                })
+                .select("*")
+                .single();
 
-            if (error) throw error;
+            if (!error) {
+                assignment = data;
+                break;
+            }
 
-            exists = Boolean(data);
+            insertError = error;
+
+            if (error.code !== "23505") {
+                throw error;
+            }
         }
 
-        const newAssignment = {
-            id: crypto.randomUUID(),
-            code,
-            title: title.trim(),
-            instructions: instructions.trim(),
-            question: question.trim()
-        };
-
-        const { data, error } = await supabase
-            .from("assignments")
-            .insert(newAssignment)
-            .select()
-            .single();
-
-        if (error) throw error;
+        if (!assignment) {
+            throw insertError || new Error(
+                "Could not generate a unique assignment code."
+            );
+        }
 
         res.status(201).json({
             message: "Assignment published successfully!",
-            assignment: {
-                ...data,
-                createdAt: data.created_at
-            }
+            assignment
         });
     } catch (error) {
         console.error("Error publishing assignment:", error.message);
+
         res.status(500).json({
-            error: "Unable to publish assignment. Please try again."
+            error: "Unable to publish assignment."
         });
     }
 });
 
-// Retrieve one assignment by its join code
+// GET: Find an assignment by its join code
 app.get("/api/assignments/:code", async (req, res) => {
-    const code = req.params.code.toUpperCase();
+    const code = req.params.code.trim().toUpperCase();
 
     try {
         const { data, error } = await supabase
@@ -136,25 +138,21 @@ app.get("/api/assignments/:code", async (req, res) => {
 
         if (!data) {
             return res.status(404).json({
-                error: "Assignment not found. Check the code and try again."
+                error: "Assignment not found. Please check the code."
             });
         }
 
-        res.json({
-            assignment: {
-                ...data,
-                createdAt: data.created_at
-            }
-        });
+        res.json({ assignment: data });
     } catch (error) {
-        console.error("Error retrieving assignment:", error.message);
+        console.error("Error finding assignment:", error.message);
+
         res.status(500).json({
-            error: "Unable to retrieve assignment."
+            error: "Unable to find assignment."
         });
     }
 });
 
-// POST submit student response
+// POST: Save a student's answer and activity counters
 app.post("/api/submissions", async (req, res) => {
     const {
         assignmentId,
@@ -190,12 +188,12 @@ app.post("/api/submissions", async (req, res) => {
     }
 
     try {
-        const { data: assignment, error: lookupError } =
-            await supabase
-                .from("assignments")
-                .select("id")
-                .eq("id", assignmentId)
-                .maybeSingle();
+        // Confirm that the assignment exists.
+        const { data: assignment, error: lookupError } = await supabase
+            .from("assignments")
+            .select("id")
+            .eq("id", assignmentId)
+            .maybeSingle();
 
         if (lookupError) throw lookupError;
 
@@ -205,6 +203,7 @@ app.post("/api/submissions", async (req, res) => {
             });
         }
 
+        // Save the response and tracked activity.
         const { data, error } = await supabase
             .from("submissions")
             .insert({
@@ -215,7 +214,7 @@ app.post("/api/submissions", async (req, res) => {
                 tab_leave_count: tabLeaveCount,
                 ai_question_count: aiQuestionCount
             })
-            .select()
+            .select("*")
             .single();
 
         if (error) throw error;
@@ -224,21 +223,29 @@ app.post("/api/submissions", async (req, res) => {
             message: "Response submitted successfully!",
             submission: data
         });
-
     } catch (error) {
         console.error("Error saving submission:", error.message);
+
         res.status(500).json({
             error: "Unable to save your response."
         });
     }
 });
 
-// GET submissions for a specific assignment
+// GET: Retrieve submissions for a teacher's assignment
 app.get("/api/assignments/:id/submissions", async (req, res) => {
     try {
         const { data, error } = await supabase
             .from("submissions")
-            .select("id, student_name, answer, submitted_at, paste_count, tab_leave_count, ai_question_count")
+            .select(`
+                id,
+                student_name,
+                answer,
+                submitted_at,
+                paste_count,
+                tab_leave_count,
+                ai_question_count
+            `)
             .eq("assignment_id", req.params.id)
             .order("submitted_at", { ascending: false });
 
@@ -247,13 +254,14 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
         res.json({ submissions: data });
     } catch (error) {
         console.error("Error loading submissions:", error.message);
+
         res.status(500).json({
             error: "Unable to load student submissions."
         });
     }
 });
 
-
+// Start the server
 app.listen(PORT, () => {
-    console.log(`TOFU is running at http://localhost:${PORT}`);
+    console.log(`TOFU server running at http://localhost:${PORT}`);
 });
