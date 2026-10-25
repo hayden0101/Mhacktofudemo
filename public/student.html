@@ -157,7 +157,7 @@
 
         #chat-messages {
             min-height: 50px;
-            max-height: 300px;
+            max-height: 450px;
             overflow-y: auto;
             margin: 14px 0;
             padding: 12px;
@@ -213,6 +213,26 @@
 
             .chat-input-row button {
                 margin-top: 0;
+            }
+
+            .chat-msg {
+                margin: 8px 0;
+                padding: 10px 12px;
+                border-radius: 10px;
+                max-width: 90%;
+                line-height: 1.5;
+                white-space: pre-wrap;   /* keeps line breaks from the AI's reply */
+                overflow-wrap: anywhere;
+            }
+
+            .chat-msg.user {
+                background: #d9f3ef;
+                margin-left: auto;
+            }
+
+            .chat-msg.model {
+                background: #fff;
+                border: 1px solid #e0e0e0;
             }
         }
     </style>
@@ -305,7 +325,6 @@
 
                 <div id="chat-messages" aria-live="polite">
                     <p class="chat-placeholder">
-                        Your AI learning assistant will appear here soon.
                     </p>
                 </div>
 
@@ -331,7 +350,6 @@
                 </form>
 
                 <p class="chat-placeholder">
-                    AI assistant integration coming soon.
                 </p>
             </section>
         </div>

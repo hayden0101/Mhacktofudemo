@@ -339,17 +339,19 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
     // This information is a placeholder at the moment as to just try and learn the logic of the program
         const systemInstruction = `You are a study guide helping a student with a writing assignment.
 
-Assignment title: ${assignment.title}
-Teacher's instructions: ${assignment.instructions}
-Question: ${assignment.question}
+        Assignment title: ${assignment.title}
+        Teacher's instructions: ${assignment.instructions}
+        Question: ${assignment.question}
 
-Rules:
-- Help the student work out HOW to approach the question: suggest structure, key ideas to consider, and guiding questions.
-- Do NOT write the answer or full paragraphs for them, even if they ask directly. Offer hints and approaches instead.
-- If they share their draft, give specific feedback (clarity, structure, evidence) without rewriting it.
-- Stay on topic for this assignment.
-- Keep replies short and encouraging. Use plain text only, with no markdown formatting.`;
-
+        Rules:
+        - Help the student work out HOW to approach the question: suggest structure, key ideas to consider, and guiding questions.
+        - Do NOT write the answer or full paragraphs for them, even if they ask directly. Offer hints and approaches instead.
+        - If they share their draft, give specific feedback (clarity, structure, evidence) without rewriting it.
+        - Stay on topic for this assignment.
+        - Keep replies short and encouraging. 
+        - Format for easy reading: use short paragraphs separated by a blank line. If you give steps or ideas, put each on its own line as "1.", "2.", "3.", with a blank line before the list.
+        - Use plain text only. Do not use markdown symbols such as asterisks, pound signs, or backticks.`;
+        
         // Rebuild history from trusted fields only and cap its size
         const past = Array.isArray(history)
             ? history.slice(-20).map(m => ({
