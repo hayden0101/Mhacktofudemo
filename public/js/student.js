@@ -16,12 +16,36 @@ const submitButton = document.getElementById("submit-button");
 const statusMessage = document.getElementById("status-message");
 
 let currentAssignment = null;
+let pasteCount = 0;
+let tabLeaveCount = 0;
+let aiQuestionCount = 0;
+let responseSubmitted = false;
 
 // Display status messages to the student.
 function showStatus(message, isError = false) {
     statusMessage.textContent = message;
     statusMessage.style.color = isError ? "#c62828" : "#16803c";
 }
+
+// Track pasting into the answer textbox.
+studentAnswerInput.addEventListener("paste", () => {
+    if (currentAssignment && !responseSubmitted) {
+        pasteCount++;
+        console.log("Paste events:", pasteCount);
+    }
+});
+
+// Track when the student leaves the assignment tab.
+document.addEventListener("visibilitychange", () => {
+    if (
+        document.hidden &&
+        currentAssignment &&
+        !responseSubmitted
+    ) {
+        tabLeaveCount++;
+        console.log("Tab leaves:", tabLeaveCount);
+    }
+});
 
 // Join an assignment using the teacher's code.
 joinForm.addEventListener("submit", async (event) => {
@@ -43,16 +67,14 @@ joinForm.addEventListener("submit", async (event) => {
         );
 
         const responseText = await response.text();
-
         let result;
 
         try {
             result = JSON.parse(responseText);
         } catch {
             console.error("Server returned non-JSON:", responseText);
-
             throw new Error(
-                `Server returned an unexpected response (HTTP ${response.status}). Check the server terminal.`
+                `Unexpected server response (HTTP ${response.status}).`
             );
         }
 
@@ -70,21 +92,23 @@ joinForm.addEventListener("submit", async (event) => {
             throw new Error("The assignment data is incomplete.");
         }
 
-        // Save the assignment so the student can submit a response.
         currentAssignment = result.assignment;
 
-        // Display the teacher's assignment information.
+        // Reset activity counters for this assignment session.
+        pasteCount = 0;
+        tabLeaveCount = 0;
+        aiQuestionCount = 0;
+        responseSubmitted = false;
+
         assignmentTitle.textContent = currentAssignment.title;
         assignmentInstructions.textContent =
             currentAssignment.instructions;
         assignmentQuestion.textContent =
             currentAssignment.question;
 
-        // Show the assignment and hide the join form.
         assignmentSection.hidden = false;
         joinSection.hidden = true;
 
-        // Reset the answer form for the newly joined assignment.
         answerForm.reset();
         studentAnswerInput.disabled = false;
         studentNameInput.disabled = false;
@@ -93,7 +117,6 @@ joinForm.addEventListener("submit", async (event) => {
 
         showStatus("Assignment loaded successfully!");
 
-        // Bring the assignment into view.
         assignmentSection.scrollIntoView({
             behavior: "smooth",
             block: "start"
@@ -101,14 +124,13 @@ joinForm.addEventListener("submit", async (event) => {
 
     } catch (error) {
         console.error("Error joining assignment:", error);
-
         showStatus(error.message || "Unable to load assignment.", true);
     } finally {
         joinButton.disabled = false;
     }
 });
 
-// Submit the student's response to the server.
+// Submit the student's response and activity counts.
 answerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
@@ -137,17 +159,32 @@ answerForm.addEventListener("submit", async (event) => {
             body: JSON.stringify({
                 assignmentId: currentAssignment.id,
                 studentName,
-                answer
+                answer,
+                pasteCount,
+                tabLeaveCount,
+                aiQuestionCount
             })
         });
 
-        const result = await response.json();
+        const responseText = await response.text();
+        let result;
+
+        try {
+            result = JSON.parse(responseText);
+        } catch {
+            console.error("Server returned non-JSON:", responseText);
+            throw new Error(
+                `Unexpected server response (HTTP ${response.status}).`
+            );
+        }
 
         if (!response.ok) {
             throw new Error(
                 result.error || "Unable to submit your response."
             );
         }
+
+        responseSubmitted = true;
 
         showStatus("Your response was submitted successfully!");
 
@@ -157,12 +194,10 @@ answerForm.addEventListener("submit", async (event) => {
 
     } catch (error) {
         console.error("Error submitting response:", error);
-
         showStatus(
             error.message || "Unable to submit your response.",
             true
         );
-
         submitButton.disabled = false;
     }
 });

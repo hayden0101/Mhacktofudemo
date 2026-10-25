@@ -156,21 +156,64 @@ app.get("/api/assignments/:code", async (req, res) => {
 
 // POST submit student response
 app.post("/api/submissions", async (req, res) => {
-    const { assignmentId, studentName, answer } = req.body;
+    const {
+        assignmentId,
+        studentName,
+        answer,
+        pasteCount = 0,
+        tabLeaveCount = 0,
+        aiQuestionCount = 0
+    } = req.body;
 
-    if (!assignmentId || !studentName?.trim() || !answer?.trim()) {
+    if (
+        typeof assignmentId !== "string" ||
+        typeof studentName !== "string" ||
+        typeof answer !== "string" ||
+        !studentName.trim() ||
+        !answer.trim()
+    ) {
         return res.status(400).json({
             error: "Please provide your name and a response."
         });
     }
 
+    const counts = [pasteCount, tabLeaveCount, aiQuestionCount];
+
+    if (
+        !counts.every(
+            count => Number.isInteger(count) && count >= 0
+        )
+    ) {
+        return res.status(400).json({
+            error: "Activity counts must be non-negative integers."
+        });
+    }
+
     try {
+        const { data: assignment, error: lookupError } =
+            await supabase
+                .from("assignments")
+                .select("id")
+                .eq("id", assignmentId)
+                .maybeSingle();
+
+        if (lookupError) throw lookupError;
+
+        if (!assignment) {
+            return res.status(404).json({
+                error: "Assignment not found."
+            });
+        }
+
         const { data, error } = await supabase
             .from("submissions")
             .insert({
                 assignment_id: assignmentId,
                 student_name: studentName.trim(),
-                answer: answer.trim()
+                answer: answer.trim(),
+                paste_count: pasteCount,
+                tab_leave_count: tabLeaveCount,
+                ai_question_count: aiQuestionCount
             })
             .select()
             .single();
@@ -181,6 +224,7 @@ app.post("/api/submissions", async (req, res) => {
             message: "Response submitted successfully!",
             submission: data
         });
+
     } catch (error) {
         console.error("Error saving submission:", error.message);
         res.status(500).json({
@@ -194,7 +238,7 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
     try {
         const { data, error } = await supabase
             .from("submissions")
-            .select("id, student_name, answer, submitted_at")
+            .select("id, student_name, answer, submitted_at, paste_count, tab_leave_count, ai_question_count")
             .eq("assignment_id", req.params.id)
             .order("submitted_at", { ascending: false });
 
@@ -208,6 +252,7 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
         });
     }
 });
+
 
 app.listen(PORT, () => {
     console.log(`TOFU is running at http://localhost:${PORT}`);

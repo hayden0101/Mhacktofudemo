@@ -47,6 +47,7 @@ async function loadAssignments() {
 
             let submissionsLoaded = false;
 
+            // Load submissions for this assignment
             async function loadSubmissions() {
                 submissionPanel.hidden = false;
                 submissionPanel.replaceChildren();
@@ -95,9 +96,11 @@ async function loadAssignments() {
                         const responseCard = document.createElement("div");
                         responseCard.className = "text-item";
 
+                        // Student name
                         const student = document.createElement("h4");
                         student.textContent = submission.student_name;
 
+                        // Submission time
                         const submittedAt = document.createElement("p");
                         const date = new Date(submission.submitted_at);
 
@@ -105,6 +108,7 @@ async function loadAssignments() {
                             ? "Submission time unavailable"
                             : "Submitted: " + date.toLocaleString();
 
+                        // Student answer
                         const answerLabel = document.createElement("p");
                         answerLabel.textContent = "Answer:";
 
@@ -112,11 +116,39 @@ async function loadAssignments() {
                         answer.textContent = submission.answer;
                         answer.style.whiteSpace = "pre-wrap";
 
+                        // Student activity metrics
+                        const activity = document.createElement("div");
+                        activity.className = "text-item";
+
+                        const activityHeading = document.createElement("h4");
+                        activityHeading.textContent = "Student Activity";
+
+                        const pasteMetric = document.createElement("p");
+                        pasteMetric.textContent =
+                            `Paste events: ${submission.paste_count ?? 0}`;
+
+                        const tabMetric = document.createElement("p");
+                        tabMetric.textContent =
+                            `Tab leaves: ${submission.tab_leave_count ?? 0}`;
+
+                        const aiMetric = document.createElement("p");
+                        aiMetric.textContent =
+                            `AI questions: ${submission.ai_question_count ?? 0}`;
+
+                        activity.append(
+                            activityHeading,
+                            pasteMetric,
+                            tabMetric,
+                            aiMetric
+                        );
+
+                        // Add the answer and activity to the submission card
                         responseCard.append(
                             student,
                             submittedAt,
                             answerLabel,
-                            answer
+                            answer,
+                            activity
                         );
 
                         submissionPanel.appendChild(responseCard);
@@ -139,6 +171,7 @@ async function loadAssignments() {
                 }
             }
 
+            // Show or hide the submissions panel
             viewButton.addEventListener("click", async () => {
                 if (!submissionPanel.hidden) {
                     submissionPanel.hidden = true;
