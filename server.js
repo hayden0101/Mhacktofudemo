@@ -13,6 +13,8 @@ const PORT = process.env.PORT || 3000;
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SECRET_KEY;
 
+
+// A check for the server key to store/load information
 if (!supabaseUrl || !supabaseKey) {
     console.error(
         "Missing SUPABASE_URL or SUPABASE_SECRET_KEY in your .env file."
@@ -20,16 +22,16 @@ if (!supabaseUrl || !supabaseKey) {
     process.exit(1);
 }
 
-
+// A check to make sure the current API key is in the files
 if (!process.env.GEMINI_API_KEY) {
     console.error("Missing GEMINI_API_KEY in your .env file");
     process.exit(1)
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-const GEMINI_MODEL = "gemini-3.5-flash" // Need to check for the key again but it should be about this for the cheapest option
+const GEMINI_MODEL = "gemini-3.5-flash" // the Gemini Model that we will be using for the AI interface
 
-
+// Create the client using the supabaseURL and check the key
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // Middleware
@@ -273,7 +275,7 @@ app.get("/api/assignments/:id/submissions", async (req, res) => {
 });
 
 
-// for the delete section, remove after it is done
+// DELETE: Delete the assignment after it has been submitted
 app.delete("/api/assignments/:id", async (req, res) => {
     try {
         // Delete submissions first in case the table has no cascade rule
@@ -336,7 +338,7 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
             return res.status(404).json({ error: "Assignment not found." });
         }
 
-    // This information is a placeholder at the moment as to just try and learn the logic of the program
+        // This section of the code will handle the guardrails logic of the AI chatbot in the student panel. 
         const systemInstruction = `You are a study guide helping a student with a writing assignment.
 
         Assignment title: ${assignment.title}
@@ -376,7 +378,8 @@ app.post("/api/chat", chatLimiter, async (req, res) => {
         res.json({
             reply: response.text || "I couldn't come up with a response to that. Try rephrasing your question."
         });
-    } catch (error) {
+        
+        } catch (error) {
         console.error("Error in chat:", error.message);
 
         res.status(500).json({
